@@ -1,7 +1,6 @@
-var admin;          //Сведения о текущем пользователе: 1 - администратор, 0 - User, получаем от "Global.admin_enabled"
-var main_password;  //Текущий пароль, получаем от: "Global.master_password"
+var admin;
+var main_password;
 var password;
-var floor;
 var user_password;
 var current_user;
 var ilja_pass;
@@ -13,8 +12,21 @@ var pT;
 var battery_level;
 var battery_status;
 var battery;
-var vacation_state;        // Определяет состояние индикатора режима отпуска
+var vacation_state;
 
+var button_settings1;
+var button_settings2;
+var button_settings3;
+var button_settings4;
+var button_settings5;
+var button_settings6;
+var button_settings7;
+var hvac_popup_manual;
+var hvac_popup_status;
+var hvac_popup_min;
+var floor1_labels = ["Гараж", "Гардеробная", "Санузел", "Котельная", "Прихожая","Кухня","Ротонда"];
+var floor2_labels = ["Игровая", "Ванная", "Кабинет", "Гардеробная", "Гостевая"];
+var floor3_labels = ["Спальня", "Ванная", "Детская", "Детская ванная", "Хаммам"];
 
 IR.AddListener(IR.EVENT_TAG_CHANGE, IR.GetDevice("iRidium Server"), function(name,value) {
     switch (name) {
@@ -74,10 +86,16 @@ IR.AddListener(IR.EVENT_START,0,function() {
     IR.SetVariable("Global.SEC_menu", 1);
     IR.SetVariable("Global.Settings_menu", 1);
 
-    IR.SetVariable("Global.hvac_floor", 0);
+    IR.SetVariable("Global.hvac_floor", 1);
+    IR.SetVariable("Global.hvac_switch", 3);
 
     test = [0, 0, 10, 0, 20, 10, 0, 15, 0, 22, 15, 0, 20, 0, 24, 20, 0, 23, 59, 28, 0, 0, 10, 0, 20, 10, 0, 15, 0, 22, 15, 0, 20, 0, 35, 20, 0, 23, 59, 28];
     IR.SetVariable("Global.test",test);
+
+    // получаем управление Popup -ами
+    hvac_popup_manual = IR.GetPopup("_hvac_servo_manual");
+    hvac_popup_status = IR.GetPopup("_hvac_servo_status");
+    hvac_popup_min    = IR.GetPopup("_hvac_servo_min");
 });
 
 IR.AddListener(IR.EVENT_WORK,0,function() {
@@ -138,6 +156,28 @@ IR.AddListener(IR.EVENT_WORK,0,function() {
 
 IR.AddListener(IR.EVENT_EXIT,0,function() {
     IR.SetVariable("Global.current_user",0);
+});
+
+IR.AddListener(IR.EVENT_ITEM_SHOW,IR.GetPopup("_hvac_module"),function(){
+    var hvac_module_menu = IR.GetVariable("Global.hvac_switch");
+    switch (hvac_module_menu) {
+        case 1: IR.HidePopup("_hvac_servo_min");
+            IR.HidePopup("_hvac_servo_status");
+            IR.HideGroup("servo_min_settings");
+            IR.ShowPopup("_hvac_servo_manual");
+            break;
+        case 2: IR.HidePopup("_hvac_servo_manual");
+            IR.HidePopup("_hvac_servo_status");
+            IR.HideGroup("servo_manual");
+            IR.ShowPopup("_hvac_servo_min");
+            break;
+        case 3: IR.HidePopup("_hvac_servo_manual");
+            IR.HidePopup("_hvac_servo_min");
+            IR.HideGroup("servo_manual");
+            IR.HideGroup("servo_min_settings");
+            IR.ShowPopup("_hvac_servo_status");
+            break;
+    }
 });
 
 //----------FUNCTIONS----------------
@@ -221,7 +261,6 @@ function reset_user(){
     IR.GetItem("MAIN_START").GetItem("User").Text = "Привет, Гость";
 }
 
-
 function run_main(){
     var cur_user;
     var temp;
@@ -261,4 +300,32 @@ function run_main(){
     IR.SetVariable("Global.Safety_floor_menu", 1);
     IR.SetVariable("Global.Settings_menu", 1);
     IR.SetVariable("Global.Hvac_menu", 1);
+}
+
+function hvac_popup_switch(){
+    var menu = IR.GetVariable("Global.hvac_switch");
+    if (menu === '1') {
+        IR.ShowPopup("_hvac_servo_manual");
+        IR.HideGroup("servo_min_settings");
+        IR.HidePopup("_hvac_servo_status");
+    } else if (menu === '2') {
+        IR.ShowPopup("_hvac_servo_min");
+        IR.HideGroup("Hvac_group1");
+        IR.HidePopup("_hvac_servo_status");
+    } else if (menu === '3') {
+        IR.ShowPopup("_hvac_servo_status");
+        IR.HideGroup("Hvac_group1");
+        IR.HideGroup("servo_min_settings");
+    } else {
+    }
+}
+
+function internal() {
+//   IR.GetDevice("iRidium Server").SetParameters({Host: '192.168.0.66', Port: '502', UpdateTime: '1000'});
+    IR.SetVariable("Global.wifi",0);
+}
+
+function external() {
+//   IR.GetDevice("iRidium Server").SetParameters({Host: '100.100.100.100', Port: '502', UpdateTime: '1000'});
+    IR.SetVariable("Global.wifi",1);
 }
